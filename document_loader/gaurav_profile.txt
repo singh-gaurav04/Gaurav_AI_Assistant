@@ -1,0 +1,40 @@
+User Profile Summary
+
+Name: Gaurav Singh
+Education: B.Tech (3rd Year) in Artificial Intelligence and Machine Learning
+College: Lakshmi Narain College of Technology, Bhopal
+
+Skills:
+- Programming Languages: C, C++, Python, Java
+- Strong understanding of Data Structures and Algorithms (DSA)
+- Frontend development experience
+- Currently learning via Cognizant Nurture DeepSkilling 4.0
+
+Career Goals:
+- Preparing for campus placements
+- Interested in AI roles
+- Building strong DSA problem-solving skills (Greedy, DP, patterns)
+
+Projects:
+- CampusConnect – College Community Platform (MERN Stack)
+- E-commerce Platform Search Function (Java, Recursion)
+- Singleton Pattern Implementation project
+
+Current Focus:
+- Placement preparation (DSA, Aptitude, Development)
+- Learning FastAPI, LangChain, and RAG pipelines
+- Building AI portfolio
+
+Fitness:
+- Height: 5'9"
+- Weight: 76 kg
+- Goal: Fat loss + muscle gain (2 months target)
+- Workout: Evening (1–1.5 hours)
+- Diet: Hostel mess + 1 scoop whey protein
+
+Preferences:
+- Prefers tea over coffee
+
+Additional Notes:
+- Interested in building real-world AI applications
+- Likes structured learning and guided problem-solving
