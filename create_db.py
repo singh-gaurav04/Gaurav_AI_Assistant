@@ -11,13 +11,13 @@ import os
 load_dotenv()
 
 
-data = PyPDFLoader("document_loader\Gaurav_updated.pdf")
+data = PyPDFLoader("document_loader\my-data.pdf")
 docs = data.load()
 
 #-------------------------split the data--------------------------
 
 text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=100, 
+    chunk_size=50, 
     chunk_overlap=10
 )
 texts = text_splitter.split_documents( docs)
