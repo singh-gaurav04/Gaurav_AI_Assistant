@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI,Request
 from pydantic import BaseModel
 from rag_pipeline import get_response
 from fastapi.middleware.cors import CORSMiddleware
