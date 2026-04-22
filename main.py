@@ -9,7 +9,8 @@ import time
 from utils.otp import create_otp_with_expiry
 from rich import print
 from utils.email_service import send_contact_email,send_otp_email
-from typing import List
+from schemas import ChatRequest
+
 
 
 
@@ -22,12 +23,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-otp_store = {} 
-
-class QueryRequest(BaseModel):
-    query: str
-    conversion:List
 
 class ContactRequest(BaseModel):
     email: str
@@ -42,9 +37,14 @@ def read_root():
     return {"message": "Welcome to the RAG API. Send a POST request to /chat with your query."}
 
 @app.post("/chat")
-def chat(request: QueryRequest):
-    response = get_response(request.query,request.conversation)
-    return {"response": response}   
+def chat(request: ChatRequest , ):
+    try:
+        print(request.conversation)
+        response = get_response(request.query, request.conversation)
+        return {"response": response}
+    except Exception as e:
+        print("Error:", e)
+        raise HTTPException(status_code=500, detail="Something went wrong")
 
 
 @app.post("/track-visit")

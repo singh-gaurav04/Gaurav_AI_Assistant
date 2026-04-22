@@ -6,6 +6,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_mistralai import MistralAIEmbeddings
 from pinecone import Pinecone
 from langchain_pinecone import PineconeVectorStore 
+from schemas import History
 
 
 load_dotenv()
@@ -32,7 +33,7 @@ retriever = vector_store.as_retriever(
 llm = ChatMistralAI(
     model = "mistral-small-2506",
     temperature=0.1,
-    max_tokens=100,
+    max_tokens=150,
     top_p=0.9                 
     )
 
@@ -95,7 +96,7 @@ Question:
 {question}
 
 History:
-{Message_history}
+{history}
 """
 )
 ]
@@ -103,21 +104,23 @@ History:
 
 
 print("Rag system created ")
+def format_history(messages: History):
+    return "\n".join([f"{m.role}: {m.content}" for m in messages])
 
-def get_response(query: str,messages:list):
+def get_response(query: str,messages:History):
     
     docs = retriever.invoke(query)
 
     context = "\n\n".join(
         [doc.page_content for doc in docs]
     )
-    
+
     final_prompt = prompt.invoke({
         "context" :context,
         "question": query,
-        "Message_history":messages
+        "history": format_history(messages)
     })
-    
+
     response = llm.invoke(final_prompt)
 
     # print(f"🤖: {response.content}")
