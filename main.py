@@ -1,10 +1,14 @@
-from fastapi import FastAPI,Request
+from fastapi import FastAPI,Request,HTTPException
 from pydantic import BaseModel
 from rag_pipeline import get_response
 from fastapi.middleware.cors import CORSMiddleware
 import requests
 from slack import post_to_slack
 from utils.location import get_location 
+import time
+from utils.otp import create_otp_with_expiry
+from rich import print
+from utils.email_service import send_contact_email,send_otp_email
 
 
 
@@ -17,8 +21,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+otp_store = {} 
+
 class QueryRequest(BaseModel):
     query: str
+
+class ContactRequest(BaseModel):
+    email: str
+    name: str
+    subject: str
+    message: str
+
+
 
 @app.get("/")
 def read_root():
