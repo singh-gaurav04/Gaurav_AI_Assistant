@@ -2,14 +2,20 @@ import requests
 
 def get_location(ip):
     try:
-        res = requests.get(f"https://ipapi.co/{ip}/json/")
-        data = res.json()
+        ip_arr = ip.split(",")
+        city = ""
+        region = ""
+        country = ""
 
-        city = data.get("city")
-        country = data.get("country_name")
-
-        if city and country:
-            return f"{city}, {country}"
-        return "Unknown"
+        for i in ip_arr:
+            res = requests.get(f"https://ipapi.co/{i}/json/")
+            data = res.json()
+            city = data.get("city")
+            country = data.get("country_name")
+            region = data.get("region")
+            if city and country:
+                break
+        return  f"{city},{region}, {country}"
     except:
         return "Unknown"
+    
