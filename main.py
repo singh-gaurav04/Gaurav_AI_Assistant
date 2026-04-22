@@ -9,6 +9,7 @@ import time
 from utils.otp import create_otp_with_expiry
 from rich import print
 from utils.email_service import send_contact_email,send_otp_email
+from typing import List
 
 
 
@@ -26,6 +27,7 @@ otp_store = {}
 
 class QueryRequest(BaseModel):
     query: str
+    conversion:List
 
 class ContactRequest(BaseModel):
     email: str
@@ -41,7 +43,7 @@ def read_root():
 
 @app.post("/chat")
 def chat(request: QueryRequest):
-    response = get_response(request.query)
+    response = get_response(request.query,request.conversation)
     return {"response": response}   
 
 

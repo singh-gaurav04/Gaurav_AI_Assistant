@@ -93,6 +93,9 @@ Context:
 
 Question:
 {question}
+
+History:
+{Message_history}
 """
 )
 ]
@@ -101,7 +104,7 @@ Question:
 
 print("Rag system created ")
 
-def get_response(query: str):
+def get_response(query: str,messages:list):
     
     docs = retriever.invoke(query)
 
@@ -111,7 +114,8 @@ def get_response(query: str):
     
     final_prompt = prompt.invoke({
         "context" :context,
-        "question": query
+        "question": query,
+        "Message_history":messages
     })
     
     response = llm.invoke(final_prompt)
