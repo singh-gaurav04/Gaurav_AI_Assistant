@@ -51,6 +51,7 @@ async def track_visit(request: Request):
 🌐 Page: {page}
 📍 Location: {location}
 💻 Device: {user_agent}
+👉 Reference :{Referrer}
 🧠 IP: {ip}
 """
 
