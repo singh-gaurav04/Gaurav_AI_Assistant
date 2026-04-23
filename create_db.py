@@ -11,7 +11,7 @@ import os
 load_dotenv()
 
 
-data = PyPDFLoader("document_loader\my-data.pdf")
+data = PyPDFLoader("document_loader\Resume.pdf")
 docs = data.load()
 
 #-------------------------split the data--------------------------
