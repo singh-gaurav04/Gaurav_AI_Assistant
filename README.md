@@ -27,6 +27,7 @@ External integrations live in reusable services. Business logic is kept out of r
 3. Email delivery is implemented with SMTP through a provider interface. Add Resend/SES/SendGrid provider classes behind the same interface as needed.
 4. For multi-instance deployment, JWT authentication works without Redis because revocation state lives in PostgreSQL.
 5. Run Alembic migrations; do not use `Base.metadata.create_all()`.
+6. Supabase: use the **Session pooler** connection string (IPv4). Direct `db.*.supabase.co` URLs are IPv6-only and cause `Network is unreachable` on most hosts (Render, GitHub Actions, many VPS images).
 
 ## Setup
 
