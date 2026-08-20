@@ -15,6 +15,7 @@ from app.modules.email_template.controller import admin_router as email_admin
 from app.modules.media.controller import admin_router as media_admin
 from app.modules.chatbot.controller import public_router as chatbot_public, admin_router as chatbot_admin
 from app.modules.service.controller import public_router as service_public, admin_router as service_admin
+from app.modules.faq.controller import public_router as faq_public, admin_router as faq_admin
 
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(auth_router)
@@ -30,6 +31,7 @@ api_router.include_router(email_verification_public)
 api_router.include_router(visit_public)
 api_router.include_router(chatbot_public)
 api_router.include_router(service_public)
+api_router.include_router(faq_public)
 api_router.include_router(dashboard_router)
 api_router.include_router(profile_admin)
 api_router.include_router(skill_admin)
@@ -42,3 +44,4 @@ api_router.include_router(email_admin)
 api_router.include_router(media_admin)
 api_router.include_router(chatbot_admin)
 api_router.include_router(service_admin)
+api_router.include_router(faq_admin)

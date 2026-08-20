@@ -24,7 +24,7 @@ External integrations live in reusable services. Business logic is kept out of r
 
 1. The included logout revokes **all current access tokens for that admin** by incrementing `token_version`. If per-device logout is required later, add a durable PostgreSQL session table.
 2. ImageKit deletion is performed before deleting the media row so failed remote deletion does not silently orphan state.
-3. Email delivery is implemented with SMTP through a provider interface. Add Resend/SES/SendGrid provider classes behind the same interface as needed.
+3. Email delivery uses the **Mailgun API** (`MAILGUN_API_KEY` + `MAILGUN_DOMAIN`) over HTTPS — works on Render free tier. Sandbox domains only send to authorized recipients until you verify a custom domain.
 4. For multi-instance deployment, JWT authentication works without Redis because revocation state lives in PostgreSQL.
 5. Run Alembic migrations; do not use `Base.metadata.create_all()`.
 6. Supabase: use the **Session pooler** connection string (IPv4). Direct `db.*.supabase.co` URLs are IPv6-only and cause `Network is unreachable` on most hosts (Render, GitHub Actions, many VPS images).

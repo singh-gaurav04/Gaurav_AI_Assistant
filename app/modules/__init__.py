@@ -11,3 +11,4 @@ from app.modules.certification.model import Certification
 from app.modules.visit.model import Visit
 from app.modules.chatbot.model import ChatDocument, ChatChunk, ChatbotSettings
 from app.modules.service.model import Service
+from app.modules.faq.model import Faq

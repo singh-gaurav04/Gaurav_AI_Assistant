@@ -59,6 +59,9 @@ class EmailVerificationService:
         db.add(challenge)
         await db.commit()
 
+        if settings.APP_ENV.lower() in {"development", "dev", "local"}:
+            logger.info("DEV OTP for %s (%s): %s", email, purpose, otp)
+
         sent = await email_service.send_template_safe(
             db,
             email,
@@ -68,9 +71,10 @@ class EmailVerificationService:
         if not sent:
             raise AppError(
                 "EMAIL_NOT_CONFIGURED",
-                "Could not send verification code. Check SMTP settings on the server.",
+                "Could not send verification code. Check Mailgun API settings on the server.",
                 503,
             )
+        logger.info("OTP email accepted by Mailgun for %s", email)
 
     async def verify_otp(self, db: AsyncSession, email: str, purpose: str, otp: str) -> str:
         email = _normalize_email(email)

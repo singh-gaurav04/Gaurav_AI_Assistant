@@ -10,6 +10,7 @@ from app.modules.contact.model import Contact, ContactStatus
 from app.modules.experience.model import Experience
 from app.modules.certification.model import Certification
 from app.modules.visit.model import Visit
+from app.modules.faq.model import Faq
 
 admin_router = APIRouter(prefix="/admin", tags=["Admin"], dependencies=[Depends(get_current_admin)])
 
@@ -22,6 +23,7 @@ async def dashboard(db: AsyncSession = Depends(get_db)):
         "skills": {"total": await count(Skill), "active": await count(Skill, Skill.is_active.is_(True))},
         "experiences": {"total": await count(Experience), "published": await count(Experience, Experience.is_published.is_(True))},
         "certifications": {"total": await count(Certification), "published": await count(Certification, Certification.is_published.is_(True))},
+        "faqs": {"total": await count(Faq), "active": await count(Faq, Faq.is_active.is_(True))},
         "testimonials": {
             "total": await count(Testimonial),
             "pending": await count(Testimonial, Testimonial.status == TestimonialStatus.PENDING),

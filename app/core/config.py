@@ -47,34 +47,32 @@ class Settings(BaseSettings):
     IMAGEKIT_PRIVATE_KEY: str = ""
     IMAGEKIT_URL_ENDPOINT: str = ""
 
-    EMAIL_PROVIDER: str = "smtp"
+    EMAIL_PROVIDER: str = "mailgun"
     EMAIL_API_KEY: str = ""
+    MAILGUN_API_KEY: str = ""
+    MAILGUN_DOMAIN: str = ""
+    # us | eu
+    MAILGUN_REGION: str = "us"
+    MAILGUN_API_BASE: str = ""
     EMAIL_FROM: str = ""
     ADMIN_EMAIL: str = ""
     ADMIN_PASSWORD: str = ""
     ADMIN_NAME: str = "Admin"
-    SMTP_HOST: str = ""
-    SMTP_PORT: int = 587
-    SMTP_USERNAME: str = ""
-    SMTP_PASSWORD: str = ""
-    SMTP_USE_TLS: bool = True
 
-    @field_validator("SMTP_USERNAME", "EMAIL_FROM", "ADMIN_EMAIL", mode="before")
+    @field_validator("EMAIL_FROM", "ADMIN_EMAIL", mode="before")
     @classmethod
     def strip_email_fields(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("EMAIL_API_KEY", "MAILGUN_API_KEY", "MAILGUN_DOMAIN", "MAILGUN_REGION", "MAILGUN_API_BASE", mode="before")
+    @classmethod
+    def strip_mailgun_fields(cls, value):
         return value.strip() if isinstance(value, str) else value
 
     @field_validator("ADMIN_PASSWORD", "ADMIN_NAME", mode="before")
     @classmethod
     def strip_admin_bootstrap_fields(cls, value):
         return value.strip() if isinstance(value, str) else value
-
-    @field_validator("SMTP_PASSWORD", mode="before")
-    @classmethod
-    def normalize_smtp_password(cls, value):
-        if isinstance(value, str):
-            return value.replace(" ", "")
-        return value
 
     OTP_LENGTH: int = 6
     OTP_EXPIRE_MINUTES: int = 10
