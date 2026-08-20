@@ -1,4 +1,6 @@
 from functools import lru_cache
+import os
+
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -21,6 +23,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     FRONTEND_URL: str = "http://localhost:5173"
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173"
+    # Comma-separated. On Render, RENDER_EXTERNAL_HOSTNAME is merged automatically.
+    # Use * to allow any host (ok behind Render's proxy).
     ALLOWED_HOSTS: str = "localhost,127.0.0.1"
 
     @field_validator("DATABASE_URL", mode="before")
@@ -121,7 +125,11 @@ class Settings(BaseSettings):
 
     @property
     def allowed_hosts(self) -> list[str]:
-        return [x.strip() for x in self.ALLOWED_HOSTS.split(",") if x.strip()]
+        hosts = [x.strip() for x in self.ALLOWED_HOSTS.split(",") if x.strip()]
+        if "*" in hosts or os.getenv("RENDER"):
+            # Wildcard is appropriate behind Render's edge proxy; otherwise /health 400s.
+            return ["*"]
+        return list(dict.fromkeys(hosts))
 
 
 @lru_cache
