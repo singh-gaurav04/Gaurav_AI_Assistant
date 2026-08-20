@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     EMAIL_API_KEY: str = ""
     EMAIL_FROM: str = ""
     ADMIN_EMAIL: str = ""
+    ADMIN_PASSWORD: str = ""
+    ADMIN_NAME: str = "Admin"
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
     SMTP_USERNAME: str = ""
@@ -55,6 +57,11 @@ class Settings(BaseSettings):
     @field_validator("SMTP_USERNAME", "EMAIL_FROM", "ADMIN_EMAIL", mode="before")
     @classmethod
     def strip_email_fields(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("ADMIN_PASSWORD", "ADMIN_NAME", mode="before")
+    @classmethod
+    def strip_admin_bootstrap_fields(cls, value):
         return value.strip() if isinstance(value, str) else value
 
     @field_validator("SMTP_PASSWORD", mode="before")

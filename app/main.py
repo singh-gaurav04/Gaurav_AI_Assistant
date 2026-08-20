@@ -13,6 +13,7 @@ from app.modules.email_template.seed import ensure_default_email_templates, sync
 from app.modules.email_verification.bootstrap import ensure_email_otp_schema
 from app.modules.chatbot.bootstrap import ensure_chatbot_schema
 from app.modules.chatbot.vectorstore import ensure_pinecone_index
+from app.modules.auth.bootstrap import ensure_bootstrap_admin
 from app.modules.router import api_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -28,6 +29,7 @@ async def lifespan(_: FastAPI):
             logging.getLogger(__name__).info("Synced %s email template(s) to latest HTML", synced)
         await ensure_email_otp_schema(db)
         await ensure_chatbot_schema(db)
+        await ensure_bootstrap_admin(db)
         ensure_pinecone_index()
     yield
 
