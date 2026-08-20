@@ -36,6 +36,8 @@ def test_explain_network_unreachable():
 
 
 def test_prefer_ipv4_when_available(monkeypatch):
+    import ssl as ssl_mod
+
     url = "postgresql+asyncpg://u:p@example.com:5432/postgres"
 
     def fake_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
@@ -46,4 +48,20 @@ def test_prefer_ipv4_when_available(monkeypatch):
     monkeypatch.setattr("app.core.db_url.socket.getaddrinfo", fake_getaddrinfo)
     args = build_connect_args(url, "require")
     assert args["host"] == "93.184.216.34"
+    assert args["ssl"].check_hostname is False
+    assert args["ssl"].verify_mode == ssl_mod.CERT_NONE
+
+
+def test_supabase_pooler_uses_require_not_verify_full(monkeypatch):
+    import ssl as ssl_mod
+
+    url = "postgresql+asyncpg://postgres.ref:x@aws-0-ap-south-1.pooler.supabase.com:5432/postgres"
+
+    def fake_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+        raise socket.gaierror("offline")
+
+    monkeypatch.setattr("app.core.db_url.socket.getaddrinfo", fake_getaddrinfo)
+    args = build_connect_args(url, "auto")
+    assert isinstance(args["ssl"], ssl_mod.SSLContext)
+    assert args["ssl"].verify_mode == ssl_mod.CERT_NONE
     assert args["ssl"].check_hostname is False

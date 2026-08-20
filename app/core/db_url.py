@@ -66,23 +66,38 @@ def _is_transaction_pooler(hostname: str | None, port: int | None) -> bool:
 
 def resolve_ssl_mode(url: str, ssl_setting: str = "auto") -> str | None:
     """
-    Return asyncpg ssl mode: 'require', True-equivalent, or None to skip.
-    ssl_setting: auto | require | disable
+    Return libpq-style ssl mode for connect_args: require | verify-full | None.
+    ssl_setting: auto | require | verify-full | disable
     """
     mode = (ssl_setting or "auto").strip().lower()
     if mode in {"disable", "false", "0", "off"}:
         return None
+    if mode in {"verify-full", "verify_full", "full"}:
+        return "verify-full"
     if mode in {"require", "true", "1", "on"}:
         return "require"
 
-    # auto
+    # auto — match common cloud URIs (sslmode=require): encrypt, don't verify CA
     parsed = urlparse(url)
     if _host_is_local(parsed.hostname):
         return None
-    if _is_supabase_host(parsed.hostname):
-        return "require"
-    # Remote non-local hosts (Render/Supabase/Neon/etc.) — prefer SSL
     return "require"
+
+
+def _ssl_context_for_mode(mode: str) -> ssl.SSLContext | bool:
+    """
+    Map ssl mode to an asyncpg-compatible value.
+
+    asyncpg's ssl=True uses verify-full. Supabase/Neon expect require
+    (TLS on, no cert chain verification), which avoids CERTIFICATE_VERIFY_FAILED
+    with pooler / intermediate self-signed chains.
+    """
+    if mode == "verify-full":
+        return True
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
 
 
 def _resolve_ipv4(hostname: str | None, port: int | None = 5432) -> str | None:
@@ -181,14 +196,10 @@ def build_connect_args(url: str, ssl_setting: str = "auto") -> dict:
 
     ssl_mode = resolve_ssl_mode(url, ssl_setting)
     if ssl_mode:
-        if using_ip:
-            # asyncpg uses the TCP host as TLS server_hostname; with an IP that
-            # breaks verify_full. Keep CA verification, skip hostname match.
-            ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            args["ssl"] = ctx
-        else:
-            args["ssl"] = True
+        # Connecting by IP cannot use verify-full (SNI/hostname mismatch).
+        if using_ip and ssl_mode == "verify-full":
+            ssl_mode = "require"
+        args["ssl"] = _ssl_context_for_mode(ssl_mode)
 
     if _is_transaction_pooler(parsed.hostname, port):
         # PgBouncer transaction mode does not support prepared statements

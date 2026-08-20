@@ -11,7 +11,8 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     APP_NAME: str = "Portfolio CMS API"
     DATABASE_URL: str
-    # auto = SSL for remote/Supabase, off for localhost/docker; require | disable to force
+    # auto = SSL require for remote (encrypt, no CA verify); off for localhost/docker
+    # require | disable | verify-full
     DATABASE_SSL: str = "auto"
     DB_POOL_SIZE: int = 5
     DB_MAX_OVERFLOW: int = 5
