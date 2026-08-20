@@ -2,18 +2,36 @@ from functools import lru_cache
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.core.db_url import normalize_database_url
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 
     APP_ENV: str = "development"
     APP_NAME: str = "Portfolio CMS API"
     DATABASE_URL: str
+    # auto = SSL for remote/Supabase, off for localhost/docker; require | disable to force
+    DATABASE_SSL: str = "auto"
+    DB_POOL_SIZE: int = 5
+    DB_MAX_OVERFLOW: int = 5
     JWT_SECRET_KEY: str = Field(min_length=32)
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     FRONTEND_URL: str = "http://localhost:5173"
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173"
     ALLOWED_HOSTS: str = "localhost,127.0.0.1"
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def normalize_db_url(cls, value):
+        if isinstance(value, str):
+            return normalize_database_url(value)
+        return value
+
+    @property
+    def async_database_url(self) -> str:
+        return normalize_database_url(self.DATABASE_URL)
 
     @property
     def cors_origins(self) -> list[str]:
@@ -97,8 +115,10 @@ class Settings(BaseSettings):
     def allowed_hosts(self) -> list[str]:
         return [x.strip() for x in self.ALLOWED_HOSTS.split(",") if x.strip()]
 
+
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
 
 settings = get_settings()
