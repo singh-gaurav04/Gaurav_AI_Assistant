@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from functools import lru_cache
 from typing import Any
 
 from app.core.config import settings
@@ -128,10 +129,16 @@ def get_chat_llm(
     model: str | None = None,
     temperature: float | None = None,
 ):
-    """Build a LangChain chat model for the selected provider."""
+    """Build (or reuse) a LangChain chat model for the selected provider."""
     provider, model = validate_provider_model(provider or DEFAULT_PROVIDER, model or DEFAULT_MODEL)
     temp = settings.CHATBOT_TEMPERATURE if temperature is None else float(temperature)
+    return _build_chat_llm(provider, model, temp)
+
+
+@lru_cache(maxsize=8)
+def _build_chat_llm(provider: str, model: str, temp: float):
     api_key = _provider_key(provider)
+    max_tokens = settings.CHATBOT_MAX_TOKENS
 
     if not api_key:
         return None
@@ -140,7 +147,7 @@ def get_chat_llm(
         if provider == "openai":
             from langchain_openai import ChatOpenAI
 
-            return ChatOpenAI(model=model, api_key=api_key, temperature=temp)
+            return ChatOpenAI(model=model, api_key=api_key, temperature=temp, max_tokens=max_tokens)
 
         if provider == "openrouter":
             from langchain_openai import ChatOpenAI
@@ -149,6 +156,7 @@ def get_chat_llm(
                 model=model,
                 api_key=api_key,
                 temperature=temp,
+                max_tokens=max_tokens,
                 base_url="https://openrouter.ai/api/v1",
                 default_headers={
                     "HTTP-Referer": settings.FRONTEND_URL or "http://localhost:5173",
@@ -163,23 +171,26 @@ def get_chat_llm(
                 model=model,
                 api_key=api_key,
                 temperature=temp,
+                max_tokens=max_tokens,
                 base_url="https://api.groq.com/openai/v1",
             )
 
         if provider == "anthropic":
             from langchain_anthropic import ChatAnthropic
 
-            return ChatAnthropic(model=model, api_key=api_key, temperature=temp)
+            return ChatAnthropic(model=model, api_key=api_key, temperature=temp, max_tokens=max_tokens)
 
         if provider == "google":
             from langchain_google_genai import ChatGoogleGenerativeAI
 
-            return ChatGoogleGenerativeAI(model=model, google_api_key=api_key, temperature=temp)
+            return ChatGoogleGenerativeAI(
+                model=model, google_api_key=api_key, temperature=temp, max_output_tokens=max_tokens
+            )
 
         if provider == "mistral":
             from langchain_mistralai import ChatMistralAI
 
-            return ChatMistralAI(model=model, api_key=api_key, temperature=temp)
+            return ChatMistralAI(model=model, api_key=api_key, temperature=temp, max_tokens=max_tokens)
     except ImportError as exc:
         logger.exception("Missing package for provider %s", provider)
         raise AppError(

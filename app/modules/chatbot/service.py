@@ -1,21 +1,19 @@
 from __future__ import annotations
 
 import logging
+import re
 import uuid
 from pathlib import Path
 
 from fastapi import UploadFile
+from langchain_core.documents import Document
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.exceptions import AppError
 from app.modules.chatbot.embeddings import embedding_provider_label, mistral_configured
 from app.modules.chatbot.vectorstore import delete_document_vectors, pinecone_configured, pinecone_ready, upsert_chunks
-from app.modules.chatbot.langchain_rag import (
-    generate_with_langchain,
-    retrieve_with_langchain,
-    sources_from_docs,
-)
+from app.modules.chatbot.langchain_rag import generate_with_langchain, retrieve_with_langchain
 from app.modules.chatbot.model import ChatChunk, ChatDocument, ChatbotSettings
 from app.modules.chatbot.pdf_processor import chunk_documents, extract_pdf_documents
 from app.modules.chatbot.repository import chatbot_repository
@@ -23,7 +21,6 @@ from app.modules.chatbot.providers import list_provider_options, validate_provid
 from app.modules.chatbot.schema import (
     ChatRequest,
     ChatResponseData,
-    ChatSource,
     ChatbotConfigOut,
     ChatbotConfigUpdate,
     ChatDocumentOut,
@@ -32,10 +29,20 @@ from app.modules.chatbot.schema import (
 )
 from app.modules.experience.service import experience_service
 from app.modules.profile.service import profile_service
-from app.modules.project.repository import project_repository
-from app.modules.skill.service import skill_service
 
 logger = logging.getLogger(__name__)
+
+RESUME_WORD = re.compile(r"\b(resume|résumé|cv|curriculum vitae)\b", re.IGNORECASE)
+RESUME_ASK = re.compile(
+    r"\b(send|share|give|download|get|see|view|show|link|want|need|provide|where|attach|have)\b",
+    re.IGNORECASE,
+)
+
+
+def is_resume_request(message: str) -> bool:
+    if not RESUME_WORD.search(message):
+        return False
+    return len(message.split()) <= 3 or bool(RESUME_ASK.search(message))
 
 
 class ChatbotService:
@@ -129,7 +136,28 @@ class ChatbotService:
         if len(data) > max_bytes:
             raise AppError("FILE_TOO_LARGE", f"PDF must be under {settings.CHATBOT_MAX_FILE_MB}MB", 400)
 
-        stored_name = f"{uuid.uuid4().hex}.pdf"
+        document = await self._create_document(db, filename=filename, data=data, suffix=".pdf")
+        try:
+            page_docs, page_count = extract_pdf_documents(data, source=filename)
+            if not page_docs:
+                raise AppError("EMPTY_PDF", "No extractable text found in PDF", 400)
+        except AppError as exc:
+            document.status = "failed"
+            document.error_message = exc.message
+            await db.commit()
+            raise
+        return await self._index_document(db, document, page_docs, page_count=page_count, filename=filename)
+
+    async def ingest_text(self, db: AsyncSession, *, filename: str, text: str) -> ChatDocumentOut:
+        text = (text or "").strip()
+        if not text:
+            raise AppError("EMPTY_TEXT", "Text content is empty", 400)
+        document = await self._create_document(db, filename=filename, data=text.encode("utf-8"), suffix=".txt")
+        page_docs = [Document(page_content=text, metadata={"source": filename, "page": 1})]
+        return await self._index_document(db, document, page_docs, page_count=1, filename=filename)
+
+    async def _create_document(self, db: AsyncSession, *, filename: str, data: bytes, suffix: str) -> ChatDocument:
+        stored_name = f"{uuid.uuid4().hex}{suffix}"
         file_path = self.storage_dir / stored_name
         file_path.write_bytes(data)
 
@@ -143,12 +171,18 @@ class ChatbotService:
         document = await chatbot_repository.create_document(db, document)
         await db.commit()
         await db.refresh(document)
+        return document
 
+    async def _index_document(
+        self,
+        db: AsyncSession,
+        document: ChatDocument,
+        page_docs: list[Document],
+        *,
+        page_count: int,
+        filename: str,
+    ) -> ChatDocumentOut:
         try:
-            page_docs, page_count = extract_pdf_documents(data, source=filename)
-            if not page_docs:
-                raise AppError("EMPTY_PDF", "No extractable text found in PDF", 400)
-
             config = await chatbot_repository.get_settings(db)
             chunk_size = (
                 settings.CHATBOT_CHUNK_SIZE
@@ -170,7 +204,7 @@ class ChatbotService:
             )
             pieces = [doc.page_content for doc in split_docs if doc.page_content.strip()]
             if not pieces:
-                raise AppError("EMPTY_PDF", "No usable text chunks found in PDF", 400)
+                raise AppError("EMPTY_DOCUMENT", "No usable text chunks found in document", 400)
 
             chunks = [
                 ChatChunk(
@@ -196,7 +230,7 @@ class ChatbotService:
             await db.commit()
             await db.refresh(document)
             logger.info(
-                "Ingested PDF %s (%s chunks, size=%s, overlap=%s, embed=%s, store=pinecone)",
+                "Ingested document %s (%s chunks, size=%s, overlap=%s, embed=%s, store=pinecone)",
                 document.id,
                 document.chunk_count,
                 chunk_size,
@@ -213,8 +247,8 @@ class ChatbotService:
             document.status = "failed"
             document.error_message = str(exc)[:500]
             await db.commit()
-            logger.exception("PDF ingest failed for %s", document.id)
-            raise AppError("INGEST_FAILED", "Failed to process PDF", 500) from exc
+            logger.exception("Document ingest failed for %s", document.id)
+            raise AppError("INGEST_FAILED", "Failed to process document", 500) from exc
 
     async def delete_document(self, db: AsyncSession, document_id: uuid.UUID) -> None:
         document = await chatbot_repository.get_document(db, document_id)
@@ -225,14 +259,16 @@ class ChatbotService:
         if file_path.exists():
             file_path.unlink(missing_ok=True)
 
-        await delete_document_vectors(document_id)
+        vector_ids = await chatbot_repository.list_chunk_ids(db, document_id)
+        await delete_document_vectors(document_id, vector_ids)
         await chatbot_repository.delete_document(db, document)
         await db.commit()
 
+    def _resume_url(self) -> str:
+        return f"{settings.PUBLIC_SITE_URL.rstrip('/')}/{settings.RESUME_PATH.lstrip('/')}"
+
     async def _portfolio_context(self, db: AsyncSession) -> str:
         profile = await profile_service.get_or_none(db)
-        real_projects = await project_repository.real_projects(db)
-        skills = await skill_service.list(db, True)
         experiences = await experience_service.list(db, True)
 
         lines: list[str] = []
@@ -241,29 +277,33 @@ class ChatbotService:
                 f"Owner: {profile.name} — {profile.title}. Bio: {profile.bio[:600]}. "
                 f"Email: {profile.email}. Location: {profile.location or 'N/A'}."
             )
-        if real_projects:
-            titles = ", ".join(p.title for p in real_projects[:8])
-            lines.append(f"Real-world projects: {titles}.")
-        if skills:
-            skill_names = ", ".join(s.name for s in skills[:20])
-            lines.append(f"Key skills: {skill_names}.")
         if experiences:
             exp = "; ".join(f"{e.title} at {e.company}" for e in experiences[:5])
             lines.append(f"Experience: {exp}.")
-        return "\n".join(lines) if lines else "Portfolio profile is being updated."
+        lines.append(f"Latest resume (view/download link): {self._resume_url()}")
+        return "\n".join(lines)
 
     async def chat(self, db: AsyncSession, payload: ChatRequest) -> ChatResponseData:
         message = payload.message.strip()
         if not message:
             raise AppError("EMPTY_MESSAGE", "Message cannot be empty", 400)
 
+        if is_resume_request(message):
+            return ChatResponseData(
+                response=(
+                    f"Sure! Here's Gaurav's latest resume: {self._resume_url()}\n\n"
+                    "If you'd like, I can also give you a quick summary of his experience or projects."
+                ),
+                sources=[],
+            )
+
         config = await chatbot_repository.get_settings(db)
         portfolio_context = await self._portfolio_context(db)
-        chunks = await chatbot_repository.list_chunks_with_documents(db)
+        # Postgres chunks are only needed for the local fallback retriever.
+        chunks = [] if pinecone_ready() else await chatbot_repository.list_chunks_with_documents(db)
 
         retrieved = await retrieve_with_langchain(chunks, message)
         context_docs = [doc for _chunk, _score, doc in retrieved]
-        source_payloads = sources_from_docs(context_docs)
 
         conversation = [{"role": turn.role, "content": turn.content} for turn in payload.conversation]
 
@@ -285,16 +325,14 @@ class ChatbotService:
             logger.exception("Unexpected chatbot error")
             raise AppError("CHAT_FAILED", "Chatbot failed to answer. Please try again.", 500) from exc
 
-        sources = [ChatSource.model_validate(item) for item in source_payloads]
         logger.info(
-            "Chat answered (chunks=%s, sources=%s, llm=%s/%s, embed=%s)",
+            "Chat answered (chunks=%s, llm=%s/%s, embed=%s)",
             len(context_docs),
-            len(sources),
             getattr(config, "llm_provider", "openai"),
             getattr(config, "llm_model", "gpt-4o-mini"),
             embedding_provider_label(),
         )
-        return ChatResponseData(response=response, sources=sources)
+        return ChatResponseData(response=response, sources=[])
 
 
 chatbot_service = ChatbotService()

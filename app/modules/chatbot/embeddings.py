@@ -5,7 +5,8 @@ from __future__ import annotations
 import hashlib
 import math
 import re
-from collections import Counter
+from collections import Counter, OrderedDict
+from functools import lru_cache
 
 from langchain_core.embeddings import Embeddings
 
@@ -89,8 +90,12 @@ def openai_configured() -> bool:
     return bool(settings.OPENAI_API_KEY and settings.OPENAI_API_KEY.strip())
 
 
+@lru_cache(maxsize=1)
 def get_embeddings() -> Embeddings:
-    """Primary: Mistral. Fallback: OpenAI, then local hash."""
+    """Primary: Mistral. Fallback: OpenAI, then local hash.
+
+    Cached because MistralAIEmbeddings loads a Hugging Face tokenizer on construction (several seconds).
+    """
     if mistral_configured():
         from langchain_mistralai import MistralAIEmbeddings
 
@@ -108,6 +113,22 @@ def get_embeddings() -> Embeddings:
         )
 
     return HashEmbeddings(dimensions=settings.MISTRAL_EMBEDDING_DIMENSION)
+
+
+_QUERY_CACHE: OrderedDict[str, list[float]] = OrderedDict()
+_QUERY_CACHE_SIZE = 256
+
+
+async def embed_query_cached(text: str) -> list[float]:
+    key = " ".join(text.lower().split())
+    if key in _QUERY_CACHE:
+        _QUERY_CACHE.move_to_end(key)
+        return _QUERY_CACHE[key]
+    vector = await get_embeddings().aembed_query(text)
+    _QUERY_CACHE[key] = vector
+    if len(_QUERY_CACHE) > _QUERY_CACHE_SIZE:
+        _QUERY_CACHE.popitem(last=False)
+    return vector
 
 
 async def embed_texts(texts: list[str]) -> list[list[float]]:

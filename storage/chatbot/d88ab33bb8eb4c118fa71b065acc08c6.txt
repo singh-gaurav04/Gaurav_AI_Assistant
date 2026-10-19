@@ -1,0 +1,63 @@
+ABOUT GAURAV
+Gaurav Singh — Software Engineer | AI & Generative AI Engineer. I build intelligent AI-powered applications, scalable backend systems, and production-ready APIs. My work focuses on Generative AI, Agentic AI, Retrieval-Augmented Generation (RAG), and backend engineering. I enjoy transforming complex problems into practical software solutions by combining LLM-powered workflows, intelligent search, modern backend architectures, and database optimization. Core focus: Generative AI, Agentic AI, RAG Systems, Backend Engineering, System Design.
+
+ABOUT ME
+I'm a Software Engineer specializing in AI-powered applications and backend development. I work with Python, FastAPI, Node.js, and modern Generative AI frameworks to build scalable, intelligent software systems.
+My experience includes developing REST APIs, integrating large language models, building RAG pipelines, implementing AI agents, and deploying backend services to cloud platforms.
+I've built projects ranging from AI-driven lead discovery and personalized outreach to intelligent document assistants and full-stack local commerce platforms.
+Beyond development, I have solved 450+ Data Structures and Algorithms problems and conducted a Generative AI and backend systems workshop attended by 300+ participants.
+I'm passionate about building useful products, exploring emerging AI technologies, and developing reliable software that solves real-world problems.
+
+CONTACT
+Email: gaurav.workspace26@gmail.com
+Phone: +91 7479582593
+Location: Bengaluru, India
+GitHub: https://github.com/singh-gaurav04
+LinkedIn: https://www.linkedin.com/in/gaurav26lnct/
+Portfolio website: https://gaurav26lnct.netlify.app
+Latest resume: https://gaurav26lnct.netlify.app/assets/documents/gaurav_singh_resume.pdf
+
+TECHNICAL SKILLS
+Programming Languages: Java, Python, JavaScript, SQL.
+Backend & APIs: Node.js, Express.js, FastAPI, Spring Boot, REST APIs, Microservices, Authentication & Authorization.
+AI & Generative AI: RAG, LangChain, LangGraph, LLMs, Prompt Engineering, Embeddings, Vector Search, Agentic AI, MCP, OpenAI API, Mistral API, Hugging Face.
+Databases: MySQL, PostgreSQL, MongoDB, Redis, Database Design, Indexing, Query Optimization.
+Cloud & Tools: AWS (EC2, S3), Azure, Docker, Git, GitHub, CI/CD, Postman, VS Code.
+System Design: Load Balancing, Caching, Horizontal Scaling, Sharding, Replication, Message Queues, High Availability.
+Core Computer Science: Object-Oriented Programming (OOP), Database Management Systems (DBMS), Operating Systems, Computer Networks, Multithreading, SOLID Principles, Design Patterns.
+
+EXPERIENCE
+AI Software Engineer at Meru Land Private Limited (July 2026 – August 2026, Remote). Developed backend services and AI-powered workflows, focusing on scalable APIs, LLM integration, and production deployment. Developed backend services and REST APIs using Python and FastAPI and deployed them to production. Built LLM-powered workflows using LangChain, LangGraph, and Retrieval-Augmented Generation (RAG). Improved response relevance and reduced manual effort through AI-powered workflows. Integrated third-party APIs and collaborated on scalable, testable backend architecture. Technologies: Python, FastAPI, LangChain, LangGraph, RAG, REST APIs, LLMs.
+
+FEATURED PROJECT
+LocalShopWala.com (Full-Stack · AI Search · E-commerce), 2026. A local commerce platform connecting customers with nearby shops and services, supporting shop discovery, ordering, and digital payments. Engineered and deployed a full-stack commerce platform with production REST APIs. Built a dedicated Python/FastAPI AI microservice for intelligent search and LLM-based interactions. Designed PostgreSQL data models and integrated Redis caching. Implemented authentication, structured logging, and Docker-based deployment. Tech stack: Node.js, Express.js, Python, FastAPI, PostgreSQL, Redis, Docker, REST APIs. Live site: https://localshopwala.com Source code: https://github.com/singh-gaurav04/LocalShopWala
+
+FEATURED PROJECT
+LinkedIn Scouting Agent (Agentic AI · Automation · Cloud), April – June 2026. An AI system for automated lead discovery, profile analysis, lead qualification, and personalized outreach workflows. Built AI agent workflows for prospect discovery and profile analysis. Integrated UniPile APIs with LangChain and LangGraph for context-aware lead qualification. Deployed the backend on Azure App Service. Optimized backend pipelines for low latency. Tech stack: Python, FastAPI, LangChain, LangGraph, UniPile, Azure. Source code: https://github.com/singh-gaurav04/Linkedin-Scouting-Agent
+
+FEATURED PROJECT
+AI Personal Assistant (Generative AI · RAG · Semantic Search), December 2025 – January 2026. A context-aware AI assistant that uses persistent memory and semantic search to answer questions using user documents. Built a RAG-based assistant with persistent memory and semantic search. Implemented document ingestion and embedding generation. Used structured prompting and retrieval-augmented context injection to help reduce hallucinations. Tech stack: Python, FastAPI, LangChain, Hugging Face, Mistral API, Pinecone. Source code: https://github.com/singh-gaurav04/Gaurav_AI_Assistant
+
+FEATURED PROJECT
+Nail-On-Call (Beauty Tech · On-Demand Services). Nail-On-Call is a beauty service platform designed to make professional nail care and nail art more convenient by connecting customers with nail technicians. The platform focuses on simplifying service discovery, appointment booking, and access to personalized nail care services. Convenient discovery of nail art and nail care services. Appointment booking for personalized beauty services. Customer-focused experience designed for convenience and accessibility. Brand-focused digital presence to promote services and attract customers. Focus: Beauty Tech, On-Demand Services, Customer Experience, Digital Marketing. Tech stack: React.js, Node.js, Express.js, PostgreSQL, ImageKit. Live site: https://www.nailoncall.com/
+
+OTHER PROJECT
+AI-Powered EDI Converter & Learning Platform (AI). Developed an AI-powered tool that converts EDI (Electronic Data Interchange) data into human-readable, printable formats. The platform also includes an interactive learning module to help users understand EDI concepts and prepare for interviews with curated questions and explanations. Tech stack: Python, FastAPI, LangChain, GPT, React.js. Live site: https://knowedi.vercel.app/ Source code: https://github.com/singh-gaurav04/KnowEDI
+
+OTHER PROJECT
+ShareMySecret (web), 2026. ShareMySecret lets people share passwords, API keys, and other sensitive information through encrypted, auto-expiring links instead of leaving them in chat or email. I co-founded it and lead it as CTO. Messages are encrypted in memory with AES-GCM using a random salt and nonce, and are never written to disk. Zero storage: there is no database; the encrypted payload is encoded into a URL-safe token that becomes the shareable link. Links self-destruct after a sender-chosen expiry time; the server checks expiry before decrypting. Secrets can be shared by copying the link or scanning a QR code. Tech stack: React, React Router, Tailwind CSS, Framer Motion, AES-GCM, Netlify. Live site: https://sharemysecret.netlify.app/ Source code: https://github.com/singh-gaurav04/Secret_share
+
+OTHER PROJECT
+Car Price Predictor App (AI). A web application that predicts the price of a car based on its features using linear regression. Tech stack: React, Node.js, Machine Learning, Linear Regression, Python, scikit-learn. Live site: https://github.com/singh-gaurav04/Car_predictor_app Source code: https://github.com/singh-gaurav04/Car_predictor_app
+
+ACHIEVEMENT
+450+ DSA Problems Solved. Solved more than 450 Data Structures and Algorithms problems across topics including arrays, strings, trees, graphs, dynamic programming, and recursion on LeetCode and GeeksforGeeks.
+
+ACHIEVEMENT
+AI Workshop Session Lead — 2026. Conducted a live workshop for 300+ attendees on Generative AI, FastAPI, and RAG-based backend systems.
+
+EDUCATION
+Bachelor of Technology — Computer Science and Engineering (AI & ML), Lakshmi Narain College of Technology, Bhopal (2022 – 2026). CGPA: 7.79
+
+CERTIFICATIONS
+Generative AI with Python, Udemy; Spring Boot, Telusko, September 2025; Back End Domination, Sheryians, May 2025.

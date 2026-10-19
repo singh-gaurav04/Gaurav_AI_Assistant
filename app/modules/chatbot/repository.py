@@ -26,6 +26,10 @@ class ChatbotRepository:
     async def add_chunks(self, db: AsyncSession, chunks: list[ChatChunk]) -> None:
         db.add_all(chunks)
 
+    async def list_chunk_ids(self, db: AsyncSession, document_id: UUID) -> list[str]:
+        result = await db.execute(select(ChatChunk.id).where(ChatChunk.document_id == document_id))
+        return [str(chunk_id) for chunk_id in result.scalars().all()]
+
     async def delete_chunks_for_document(self, db: AsyncSession, document_id: UUID) -> None:
         await db.execute(delete(ChatChunk).where(ChatChunk.document_id == document_id))
 

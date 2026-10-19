@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     FRONTEND_URL: str = "http://localhost:5173"
+    PUBLIC_SITE_URL: str = "https://gaurav26lnct.netlify.app"
+    RESUME_PATH: str = "/assets/documents/gaurav_singh_resume.pdf"
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173"
     # Comma-separated. On Render, RENDER_EXTERNAL_HOSTNAME is merged automatically.
     # Use * to allow any host (ok behind Render's proxy).
@@ -104,7 +106,8 @@ class Settings(BaseSettings):
     CHATBOT_CHUNK_OVERLAP: int = 120
     CHATBOT_TOP_K: int = 5
     CHATBOT_TEMPERATURE: float = 0.2
-    CHATBOT_MAX_HISTORY_TURNS: int = 8
+    CHATBOT_MAX_HISTORY_TURNS: int = 6
+    CHATBOT_MAX_TOKENS: int = 350
     CHATBOT_DEFAULT_PROVIDER: str = "openai"
 
     @field_validator(

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid
 from typing import Any
@@ -213,14 +214,19 @@ async def upsert_chunks(
     logger.info("Upserted %s vectors to Pinecone for document %s", len(payload), document_id)
 
 
-async def delete_document_vectors(document_id: uuid.UUID) -> None:
+async def delete_document_vectors(document_id: uuid.UUID, vector_ids: list[str] | None = None) -> None:
     if not pinecone_configured():
         return
     index = _get_index()
-    index.delete(
-        filter={"document_id": {"$eq": str(document_id)}},
-        namespace=_namespace(),
-    )
+    if vector_ids:
+        # Serverless indexes ignore delete-by-metadata-filter, so delete by id when known.
+        for start in range(0, len(vector_ids), 1000):
+            index.delete(ids=vector_ids[start : start + 1000], namespace=_namespace())
+    else:
+        index.delete(
+            filter={"document_id": {"$eq": str(document_id)}},
+            namespace=_namespace(),
+        )
     logger.info("Deleted Pinecone vectors for document %s", document_id)
 
 
@@ -232,15 +238,15 @@ async def similarity_search(
     if not pinecone_configured() or not mistral_configured():
         return []
 
-    from app.modules.chatbot.embeddings import get_embeddings
+    from app.modules.chatbot.embeddings import embed_query_cached
 
     k = top_k or settings.CHATBOT_TOP_K
-    embeddings = get_embeddings()
-    query_vector = await embeddings.aembed_query(query)
+    query_vector = await embed_query_cached(query)
     index = _get_index()
 
     try:
-        response = index.query(
+        response = await asyncio.to_thread(
+            index.query,
             vector=query_vector,
             top_k=k,
             namespace=_namespace(),
@@ -258,6 +264,16 @@ async def similarity_search(
         score = float(getattr(match, "score", None) or match.get("score") or 0.0)
         results.append((Document(page_content=text, metadata=metadata), score))
     return results
+
+
+async def warm_up_retrieval() -> None:
+    """Pay one-time costs (tokenizer load, embedding + Pinecone connections) at startup."""
+    if not pinecone_ready():
+        return
+    try:
+        await similarity_search("Gaurav Singh projects", top_k=1)
+    except Exception:
+        logger.warning("Retrieval warm-up failed; first chat request may be slower", exc_info=True)
 
 
 def pinecone_results_to_retrieval(
