@@ -35,9 +35,8 @@ External integrations live in reusable services. Business logic is kept out of r
 cp .env.example .env
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 alembic upgrade head
-python scripts/create_admin.py
 uvicorn app.main:app --reload
 ```
 
