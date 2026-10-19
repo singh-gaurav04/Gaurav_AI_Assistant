@@ -9,11 +9,6 @@ from app.modules.chatbot.service import chatbot_service
 public_router = APIRouter(tags=["Chatbot"])
 
 
-@public_router.get("/chatbot/config")
-async def get_chatbot_config(db: AsyncSession = Depends(get_db)):
-    return {"success": True, "data": await chatbot_service.get_config(db)}
-
-
 @public_router.post("/chat")
 async def chat(payload: ChatRequest, db: AsyncSession = Depends(get_db)):
     try:

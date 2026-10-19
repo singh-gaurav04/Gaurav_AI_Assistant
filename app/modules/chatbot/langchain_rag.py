@@ -261,14 +261,6 @@ async def generate_with_langchain(
     llm_model: str | None = None,
     llm_temperature: float | None = None,
 ) -> str:
-    llm = get_chat_llm(
-        provider=llm_provider,
-        model=llm_model,
-        temperature=llm_temperature,
-    )
-    if llm is None:
-        return _fallback_response(query, context_docs, bot_name, llm_provider)
-
     prompt = ChatPromptTemplate.from_messages(
         [
             ("system", SYSTEM_TEMPLATE),
@@ -276,26 +268,38 @@ async def generate_with_langchain(
             ("human", "{question}"),
         ]
     )
-    chain = prompt | llm | StrOutputParser()
+    inputs = {
+        "bot_name": bot_name,
+        "bot_subtitle": bot_subtitle,
+        "portfolio_context": portfolio_context or "Portfolio profile is being updated.",
+        "context": format_docs(context_docs),
+        "chat_history": build_history_messages(conversation, query),
+        "question": query,
+    }
 
-    try:
-        answer = await chain.ainvoke(
-            {
-                "bot_name": bot_name,
-                "bot_subtitle": bot_subtitle,
-                "portfolio_context": portfolio_context or "Portfolio profile is being updated.",
-                "context": format_docs(context_docs),
-                "chat_history": build_history_messages(conversation, query),
-                "question": query,
-            }
-        )
-    except Exception as exc:
-        logger.exception("LangChain chat generation failed")
+    answer = None
+    last_exc: Exception | None = None
+    for provider, model in _model_candidates(llm_provider, llm_model):
+        llm = get_chat_llm(provider=provider, model=model, temperature=llm_temperature)
+        if llm is None:
+            return _fallback_response(query, context_docs, bot_name, llm_provider)
+        try:
+            answer = await (prompt | llm | StrOutputParser()).ainvoke(inputs)
+            break
+        except Exception as exc:
+            last_exc = exc
+            if _is_rate_limited(exc):
+                logger.warning("Model %s/%s is rate-limited; trying next fallback", provider, model)
+                continue
+            logger.exception("LangChain chat generation failed")
+            break
+
+    if answer is None:
         raise AppError(
             "CHAT_GENERATION_FAILED",
-            f"Could not generate a reply: {exc}",
+            f"Could not generate a reply: {last_exc}",
             503,
-        ) from exc
+        ) from last_exc
 
     text = to_plain_text(answer or "")
     if not text:
@@ -303,10 +307,26 @@ async def generate_with_langchain(
     return text
 
 
+def _model_candidates(provider: str | None, model: str | None) -> list[tuple[str | None, str | None]]:
+    candidates = [(provider, model)]
+    if (provider or "").strip().lower() == "mistral":
+        for fallback in settings.CHATBOT_FALLBACK_MODELS.split(","):
+            fallback = fallback.strip()
+            if fallback and fallback != model:
+                candidates.append(("mistral", fallback))
+    return candidates
+
+
+def _is_rate_limited(exc: Exception) -> bool:
+    text = str(exc).lower()
+    return "429" in text or "rate limit" in text
+
+
 def to_plain_text(text: str) -> str:
     """Strip markdown the model adds despite instructions; the chat UI renders plain text."""
     text = re.sub(r"\[([^\]]+)\]\((https?://[^)\s]+)\)", r"\2", text)
     text = re.sub(r"(\*\*|__)(.+?)\1", r"\2", text)
+    text = re.sub(r"(?<![\w*])\*(?=\S)([^*\n]+?)(?<=\S)\*(?![\w*])", r"\1", text)
     text = re.sub(r"^\s{0,3}#{1,6}\s+", "", text, flags=re.MULTILINE)
     text = re.sub(r"^\s*(?:[-*•]|\d+[.)])\s+", "", text, flags=re.MULTILINE)
     text = re.sub(r"\n{3,}", "\n\n", text)

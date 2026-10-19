@@ -33,16 +33,29 @@ from app.modules.profile.service import profile_service
 logger = logging.getLogger(__name__)
 
 RESUME_WORD = re.compile(r"\b(resume|résumé|cv|curriculum vitae)\b", re.IGNORECASE)
-RESUME_ASK = re.compile(
-    r"\b(send|share|give|download|get|see|view|show|link|want|need|provide|where|attach|have)\b",
+ASK_WORD = re.compile(
+    r"\b(send|share|give|download|get|see|view|show|link|url|want|need|provide|where|attach|have)\b",
     re.IGNORECASE,
+)
+CONTACT_FIELDS = (
+    ("github_url", "GitHub", re.compile(r"\bgit\s?hub\b", re.IGNORECASE)),
+    ("linkedin_url", "LinkedIn", re.compile(r"\blinked\s?in\b", re.IGNORECASE)),
+    ("email", "email", re.compile(r"\b(e-?mail|mail\s?id|mail address)\b", re.IGNORECASE)),
+    ("phone", "phone number", re.compile(r"\b(phone|mobile|contact number|whats\s?app)\b", re.IGNORECASE)),
 )
 
 
 def is_resume_request(message: str) -> bool:
     if not RESUME_WORD.search(message):
         return False
-    return len(message.split()) <= 3 or bool(RESUME_ASK.search(message))
+    return len(message.split()) <= 3 or bool(ASK_WORD.search(message))
+
+
+def requested_contact_fields(message: str) -> list[tuple[str, str]]:
+    """Contact details explicitly asked for, e.g. "send me his github"; empty for questions about them."""
+    if len(message.split()) > 4 and not ASK_WORD.search(message):
+        return []
+    return [(attr, label) for attr, label, pattern in CONTACT_FIELDS if pattern.search(message)]
 
 
 class ChatbotService:
@@ -267,6 +280,20 @@ class ChatbotService:
     def _resume_url(self) -> str:
         return f"{settings.PUBLIC_SITE_URL.rstrip('/')}/{settings.RESUME_PATH.lstrip('/')}"
 
+    async def _contact_reply(self, db: AsyncSession, message: str) -> str | None:
+        fields = requested_contact_fields(message)
+        if not fields:
+            return None
+        profile = await profile_service.get_or_none(db)
+        lines = [
+            f"Here's Gaurav's {label}: {getattr(profile, attr)}"
+            for attr, label in fields
+            if profile and getattr(profile, attr, None)
+        ]
+        if not lines:
+            return None
+        return "\n".join(lines) + "\n\nFeel free to reach out, or ask me anything about his work."
+
     async def _portfolio_context(self, db: AsyncSession) -> str:
         profile = await profile_service.get_or_none(db)
         experiences = await experience_service.list(db, True)
@@ -297,6 +324,10 @@ class ChatbotService:
                 sources=[],
             )
 
+        contact_reply = await self._contact_reply(db, message)
+        if contact_reply:
+            return ChatResponseData(response=contact_reply, sources=[])
+
         config = await chatbot_repository.get_settings(db)
         portfolio_context = await self._portfolio_context(db)
         # Postgres chunks are only needed for the local fallback retriever.
@@ -313,8 +344,8 @@ class ChatbotService:
                 conversation=conversation,
                 context_docs=context_docs,
                 portfolio_context=portfolio_context,
-                bot_name=config.bot_name,
-                bot_subtitle=config.bot_subtitle,
+                bot_name=settings.CHATBOT_NAME,
+                bot_subtitle=settings.CHATBOT_SUBTITLE,
                 llm_provider=getattr(config, "llm_provider", None),
                 llm_model=getattr(config, "llm_model", None),
                 llm_temperature=getattr(config, "llm_temperature", None),

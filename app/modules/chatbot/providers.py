@@ -190,7 +190,10 @@ def _build_chat_llm(provider: str, model: str, temp: float):
         if provider == "mistral":
             from langchain_mistralai import ChatMistralAI
 
-            return ChatMistralAI(model=model, api_key=api_key, temperature=temp, max_tokens=max_tokens)
+            # Fail fast on 429s so the caller can fall back to another model instead of backing off.
+            return ChatMistralAI(
+                model=model, api_key=api_key, temperature=temp, max_tokens=max_tokens, max_retries=1
+            )
     except ImportError as exc:
         logger.exception("Missing package for provider %s", provider)
         raise AppError(

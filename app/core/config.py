@@ -108,6 +108,10 @@ class Settings(BaseSettings):
     CHATBOT_TEMPERATURE: float = 0.2
     CHATBOT_MAX_HISTORY_TURNS: int = 6
     CHATBOT_MAX_TOKENS: int = 350
+    CHATBOT_NAME: str = "Gaurav's AI Agent"
+    CHATBOT_SUBTITLE: str = "Ask me about Gaurav's work"
+    # Tried in order when the configured Mistral model is rate-limited.
+    CHATBOT_FALLBACK_MODELS: str = "open-mistral-nemo,ministral-8b-latest"
     CHATBOT_DEFAULT_PROVIDER: str = "openai"
 
     @field_validator(
